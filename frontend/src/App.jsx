@@ -32,7 +32,7 @@ import Product from "./pages/Products/Product"
 
 //Footer
 import AboutUs from "./pages/user/AboutUs";
-
+import Contactus  from "./pages/user/Contactus";
 
 function App() {
   
@@ -43,7 +43,7 @@ function App() {
       {/* HOME */}
       {/* ================================================= */}
       <Route path="/" element={<Homepage />} />
-
+       
       {/* ================================================= */}
       {/* ADMIN PANEL */}
       {/* ================================================= */}
@@ -94,6 +94,8 @@ function App() {
       {/* Example URL → /products/food/f1 */}
       {/* <Route path="/products/:id/:productId" element={<ProductDetails />} /> */}
       <Route path="/AboutUs" element={<AboutUs />} /> 
+      <Route path="/Contactus " element={<Contactus />} /> 
+      
    
       {/* ================================================= */}
       {/* 404 FALLBACK */}
