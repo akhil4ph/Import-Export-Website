@@ -22,20 +22,24 @@ export const customerPresent = async (req, res, next) => {
 }
 
 export const adminPresent = async (req, res, next) => {
-    try{
-        const {email} = req.body;
+    try {
+        const { email } = req.body;
 
-        const isEmail = await adminAuth_Model.findOne({email: email});
-        
-        if(!isEmail){
-            return res.status(401).json(new ApiError(401, "Email is not Found"));
+        if (!email) {
+            return res.status(400).json(new ApiError(400, "Email is required"));
         }
 
-        req.user = isEmail
+        const adminDetail = await adminAuth_Model.findOne({ email });
+
+        if (!adminDetail) {
+            return res.status(404).json(new ApiError(404, "Email not found"));
+        }
+
+        
+        req.user = adminDetail;
 
         return next();
-    }
-    catch(err){
-        return res.status(500).json(new ApiError(500, err.message, [{message: err.message, name: err.name}]));
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, err.message));
     }
 }

@@ -45,7 +45,7 @@ app.use(express.json())
 
 // Admin Auth API
 app.use("/api/v1/admin/auth", adminAuthRouter);
-console.log("✅ Admin Auth Routes Registered");
+console.log(" Admin Auth Routes Registered");
 
 app.use("/api/v1/customer/auth", customerAuthRouter)
 app.use("/api/v1/customer/inquiry", customerInquiryRouter);

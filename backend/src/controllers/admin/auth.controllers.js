@@ -218,85 +218,217 @@ import { brevo } from '../../config/brevo.config.js';
 //     }
 // };
 
+// const Signup = async (req, res) => {
+//   try {
+//     const { name, email, password, securityKey } = req.body;
+
+//     const hashPassword = await passwordEncrypt(password)
+
+//     if(securityKey !== process.env.adminKey){
+//         return res.status(401).json(new ApiError(401, "Wrong Security Key."))
+//     }
+
+//     const adminDetail = adminAuth_Model({
+//       name,
+//       email,
+//       password: hashPassword
+//     });
+
+//     await adminDetail.save();
+
+//     adminDetail.password = undefined;
+//     adminDetail.email = undefined;
+
+//     await cookiesForUser(res, adminDetail);
+
+//     return res.status(200).json(new ApiResponse(200, null, "Customer Signup Successfully."));
+//   }
+//   catch (err) {
+//     return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]));
+//   }
+// }
+
+
+
+
 const Signup = async (req, res) => {
-  try {
-    const { name, email, password, securityKey } = req.body;
+    try {
+        const { name, email, password, securityKey } = req.body;
 
-    const hashPassword = await passwordEncrypt(password)
+        // ✅ Validation
+        if (!name || !email || !password || !securityKey) {
+            return res.status(400).json(new ApiError(400, "Sab fields required hain"));
+        }
 
-    if(securityKey !== process.env.adminKey){
-        return res.status(401).json(new ApiError(401, "Wrong Security Key."))
+        // ✅ Security key check
+        if (securityKey !== process.env.adminKey) {
+            return res.status(401).json(new ApiError(401, "Wrong Security Key"));
+        }
+
+        // ✅ Password encrypt
+        const hashPassword = await passwordEncrypt(password);
+
+        // ✅ new keyword add kiya
+        const adminDetail = new adminAuth_Model({
+            name,
+            email,
+            password: hashPassword
+        });
+
+        await adminDetail.save();
+
+        // ✅ Sensitive fields hide karo
+        adminDetail.password = undefined;
+
+        await cookiesForUser(res, adminDetail);
+
+        return res.status(200).json(new ApiResponse(200, adminDetail, "Signup Successfully"));
+
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, err.message));
     }
-
-    const adminDetail = adminAuth_Model({
-      name,
-      email,
-      password: hashPassword
-    });
-
-    await adminDetail.save();
-
-    adminDetail.password = undefined;
-    adminDetail.email = undefined;
-
-    await cookiesForUser(res, adminDetail);
-
-    return res.status(200).json(new ApiResponse(200, null, "Customer Signup Successfully."));
-  }
-  catch (err) {
-    return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]));
-  }
 }
+
+
+
+
+// const Login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const adminDetail = await adminAuth_Model.findOne({ email: email });
+
+//     const decryptResult = await passwordDecrypt(password, adminDetail.password);
+
+//     if (!decryptResult) {
+//       return res.status(401).json(new ApiError(401, "Incorrect Password"));
+//     }
+
+//     adminDetail.password = undefined;
+//     adminDetail.email = undefined;
+//     adminDetail.contact = undefined;
+
+//     await cookiesForUser(res, adminDetail);
+
+//     return res.status(200).json(new ApiResponse(200, null, "Access Granted"));
+//   }
+//   catch (err) {
+//     return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]))
+//   }
+// }
+
 
 const Login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+    try {
+        const { password } = req.body;
 
-    const adminDetail = await adminAuth_Model.findOne({ email: email });
+       
+        const adminDetail = req.user;
 
-    const decryptResult = await passwordDecrypt(password, adminDetail.password);
+        if (!password) {
+            return res.status(400).json(new ApiError(400, "Password is required"));
+        }
 
-    if (!decryptResult) {
-      return res.status(401).json(new ApiError(401, "Incorrect Password"));
+        const isPasswordCorrect = await passwordDecrypt(password, adminDetail.password);
+        if (!isPasswordCorrect) {
+            return res.status(401).json(new ApiError(401, "Incorrect Password"));
+        }
+
+        
+        adminDetail.password = undefined;
+
+        await cookiesForUser(res, adminDetail);
+
+        return res.status(200).json(new ApiResponse(200, adminDetail, "Login Successfully"));
+
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, err.message));
     }
-
-    adminDetail.password = undefined;
-    adminDetail.email = undefined;
-    adminDetail.contact = undefined;
-
-    await cookiesForUser(res, adminDetail);
-
-    return res.status(200).json(new ApiResponse(200, null, "Access Granted"));
-  }
-  catch (err) {
-    return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]))
-  }
 }
+
+
+
+
+
+// const forgetPassword = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const hashPassword = await passwordEncrypt(password);
+
+//     const adminDetail = await adminAuth_Model.findOneAndUpdate(
+//       { email: email },
+//       { password: hashPassword }
+//     );
+
+//     adminDetail.email = undefined;
+//     adminDetail.password = undefined;
+//     adminDetail.contact = undefined;
+
+//     await cookiesForUser(res, adminDetail);
+
+//     return res.status(200).json(new ApiResponse(200, null, "Your password is Forget Successfully."))
+
+//   }
+//   catch (err) {
+//     return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]))
+//   }
+// }
+
 
 const forgetPassword = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+    try {
+        const { email, newPassword, confirmPassword } = req.body;
+        
+        // console.log(req.body);
+        if (!email || !newPassword || !confirmPassword) {
+            return res.status(400).json(new ApiError(400, "Sab fields required hain"));
+        }
 
-    const hashPassword = await passwordEncrypt(password);
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json(new ApiError(400, "Passwords match nahi karte"));
+        }
 
-    const adminDetail = await adminAuth_Model.findOneAndUpdate(
-      { email: email },
-      { password: hashPassword }
-    );
+        if (newPassword.length < 6) {
+            return res.status(400).json(new ApiError(400, "Password kam se kam 6 characters ka hona chahiye"));
+        }
 
-    adminDetail.email = undefined;
-    adminDetail.password = undefined;
-    adminDetail.contact = undefined;
+        const adminDetail = await adminAuth_Model.findOne({ email });
+        if (!adminDetail) {
+            return res.status(404).json(new ApiError(404, "Admin not found"));
+        }
 
-    await cookiesForUser(res, adminDetail);
+        
+        if (!adminDetail.isOtpVerified) {
+            return res.status(400).json(new ApiError(400, "Pehle OTP verify karo"));
+        }
 
-    return res.status(200).json(new ApiResponse(200, null, "Your password is Forget Successfully."))
+       
+        const hashPassword = await passwordEncrypt(newPassword);
 
-  }
-  catch (err) {
-    return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]))
-  }
+        
+        await adminAuth_Model.findByIdAndUpdate(adminDetail._id, {
+            password: hashPassword,
+            otp: null,
+            otpExpiry: null,
+            isOtpVerified: false
+        });
+
+        return res.status(200).json(new ApiResponse(200, null, "Password reset successfully"));
+
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, err.message));
+    }
 }
+
+
+
+
+
+
+
+
+
 
 const updateProfile = async (req, res) => {
   try {
@@ -348,7 +480,7 @@ const updateProfile = async (req, res) => {
 const getMyProfile = async (req, res) => {
   try {
     const { _id } = req.user;
-
+      console.log(_id);
     const userDetail = await adminAuth_Model.findById(_id);
 
     if (!userDetail) {
@@ -462,104 +594,177 @@ const signupOtp = async (req, res) => {
 }
 
 
-const forgetPasswordOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
+// const forgetPasswordOtp = async (req, res) => {
+//   try {
+//     const { email } = req.body;
 
-    const { name } = req.user
+//     const { name } = req.user
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const emailData = {
-      sender: {
-        name: process.env.companyName,
-        email: process.env.companyEmail
-      },
-      to: [{
-        email: email
-      }],
-      subject: "Password Forget Verification Otp",
-      htmlContent: `
-<div style="background: linear-gradient(135deg, #eef2ff, #f8fafc); padding:50px 0; font-family:Arial, sans-serif;">
+//     const emailData = {
+//       sender: {
+//         name: process.env.companyName,
+//         email: process.env.companyEmail
+//       },
+//       to: [{
+//         email: email
+//       }],
+//       subject: "Password Forget Verification Otp",
+//       htmlContent: `
+// <div style="background: linear-gradient(135deg, #eef2ff, #f8fafc); padding:50px 0; font-family:Arial, sans-serif;">
   
-  <div style="max-width:600px; margin:0 auto; background:#ffffff; border-radius:14px; box-shadow:0 8px 25px rgba(0,0,0,0.08); overflow:hidden;">
+//   <div style="max-width:600px; margin:0 auto; background:#ffffff; border-radius:14px; box-shadow:0 8px 25px rgba(0,0,0,0.08); overflow:hidden;">
 
-    <!-- Header -->
-    <div style="background: linear-gradient(90deg, #1e3a8a, #4f46e5); padding:30px; text-align:center; color:white;">
-      <h2 style="margin:0; font-size:22px; letter-spacing:1px;">
-        VR & Sons Import & Export
-      </h2>
-      <p style="margin:8px 0 0; font-size:14px; opacity:0.9;">
-        Account Password Forget Verification
-      </p>
-    </div>
+//     <!-- Header -->
+//     <div style="background: linear-gradient(90deg, #1e3a8a, #4f46e5); padding:30px; text-align:center; color:white;">
+//       <h2 style="margin:0; font-size:22px; letter-spacing:1px;">
+//         VR & Sons Import & Export
+//       </h2>
+//       <p style="margin:8px 0 0; font-size:14px; opacity:0.9;">
+//         Account Password Forget Verification
+//       </p>
+//     </div>
 
-    <!-- Body -->
-    <div style="padding:40px;">
+//     <!-- Body -->
+//     <div style="padding:40px;">
       
-      <p style="font-size:16px; color:#1f2937;">
-        Dear <b>${name}</b>,
-      </p>
+//       <p style="font-size:16px; color:#1f2937;">
+//         Dear <b>${name}</b>,
+//       </p>
 
+//       <p style="font-size:15px; color:#4b5563; line-height:1.7;">
+//         Welcome to <b>VR & Sons Import & Export</b>!  
+//         Please use the verification code below to complete your forget password process.
+//       </p>
+
+//       <!-- OTP Box -->
+//       <div style="text-align:center; margin:35px 0;">
+//         <div style="
+//           display:inline-block;
+//           background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+//           border:2px solid #4f46e5;
+//           padding:18px 40px;
+//           font-size:30px;
+//           letter-spacing:8px;
+//           font-weight:bold;
+//           color:#1e3a8a;
+//           border-radius:10px;
+//           box-shadow:0 4px 12px rgba(79,70,229,0.25);">
+//           ${otp}
+//         </div>
+//       </div>
+
+//       <p style="font-size:14px; color:#6b7280; text-align:center;">
+//         This OTP is valid for <b style="color:#1e3a8a;">5 minutes</b>.
+//       </p>
+
+//       <p style="font-size:14px; color:#6b7280; line-height:1.6; text-align:center;">
+//         If you did not request this forget password, please ignore this email.
+//       </p>
+
+//     </div>
+
+//     <!-- Footer -->
+//     <div style="background:#f9fafb; padding:20px; text-align:center; font-size:13px; color:#9ca3af;">
+//       <p style="margin:5px 0;">Regards,</p>
+//       <p style="margin:5px 0;"><b style="color:#1e3a8a;">VR & Sons Import & Export Team</b></p>
+//       <p style="margin-top:10px;">
+//         © ${new Date().getFullYear()} VR & Sons Import & Export. All rights reserved.
+//       </p>
+//     </div>
+
+//   </div>
+
+// </div>
+// `
+//     }
+
+//     const result = await brevo(emailData);
+
+//     if (!result) {
+//       return res.status(400).json(new ApiError(400, "Failed to send email"));
+//     }
+
+//     return res.status(200).json(new ApiResponse(200, otp, "Otp send on email is successful"));
+//   }
+//   catch (err) {
+//     return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]));
+//   }
+// }
+
+
+
+const forgetPasswordOtp = async (req, res) => {
+    try {
+        
+        const adminDetail = req.user;
+
+        
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+       
+        await adminAuth_Model.findByIdAndUpdate(adminDetail._id, {
+            otp,
+            otpExpiry,
+            isOtpVerified: false
+        });
+
+       
+        const emailData = {
+            sender: {
+                name: process.env.companyName,
+                email: process.env.companyEmail
+            },
+            to: [{ email: adminDetail.email }],
+            subject: "Password Reset OTP",
+            htmlContent: `
+<div style="background: linear-gradient(135deg, #eef2ff, #f8fafc); padding:50px 0; font-family:Arial, sans-serif;">
+  <div style="max-width:600px; margin:0 auto; background:#ffffff; border-radius:14px; box-shadow:0 8px 25px rgba(0,0,0,0.08); overflow:hidden;">
+    <div style="background: linear-gradient(90deg, #1e3a8a, #4f46e5); padding:30px; text-align:center; color:white;">
+      <h2 style="margin:0; font-size:22px;">VR & Sons Import & Export</h2>
+      <p style="margin:8px 0 0; font-size:14px; opacity:0.9;">Password Reset Verification</p>
+    </div>
+    <div style="padding:40px;">
+      <p style="font-size:16px; color:#1f2937;">Dear <b>${adminDetail.name}</b>,</p>
       <p style="font-size:15px; color:#4b5563; line-height:1.7;">
-        Welcome to <b>VR & Sons Import & Export</b>!  
-        Please use the verification code below to complete your forget password process.
+        Use the OTP below to reset your password.
       </p>
-
-      <!-- OTP Box -->
       <div style="text-align:center; margin:35px 0;">
-        <div style="
-          display:inline-block;
-          background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
-          border:2px solid #4f46e5;
-          padding:18px 40px;
-          font-size:30px;
-          letter-spacing:8px;
-          font-weight:bold;
-          color:#1e3a8a;
-          border-radius:10px;
-          box-shadow:0 4px 12px rgba(79,70,229,0.25);">
+        <div style="display:inline-block; background: linear-gradient(135deg, #e0e7ff, #c7d2fe); border:2px solid #4f46e5; padding:18px 40px; font-size:30px; letter-spacing:8px; font-weight:bold; color:#1e3a8a; border-radius:10px;">
           ${otp}
         </div>
       </div>
-
       <p style="font-size:14px; color:#6b7280; text-align:center;">
         This OTP is valid for <b style="color:#1e3a8a;">5 minutes</b>.
       </p>
-
-      <p style="font-size:14px; color:#6b7280; line-height:1.6; text-align:center;">
-        If you did not request this forget password, please ignore this email.
-      </p>
-
     </div>
-
-    <!-- Footer -->
     <div style="background:#f9fafb; padding:20px; text-align:center; font-size:13px; color:#9ca3af;">
-      <p style="margin:5px 0;">Regards,</p>
-      <p style="margin:5px 0;"><b style="color:#1e3a8a;">VR & Sons Import & Export Team</b></p>
-      <p style="margin-top:10px;">
-        © ${new Date().getFullYear()} VR & Sons Import & Export. All rights reserved.
-      </p>
+      <p><b style="color:#1e3a8a;">VR & Sons Import & Export Team</b></p>
     </div>
-
   </div>
+</div>`
+        };
 
-</div>
-`
+        const result = await brevo(emailData);
+        if (!result) {
+            return res.status(400).json(new ApiError(400, "Failed to send email"));
+        }
+
+        
+        return res.status(200).json(new ApiResponse(200, null, "OTP sent to your email"));
+
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, err.message));
     }
-
-    const result = await brevo(emailData);
-
-    if (!result) {
-      return res.status(400).json(new ApiError(400, "Failed to send email"));
-    }
-
-    return res.status(200).json(new ApiResponse(200, otp, "Otp send on email is successful"));
-  }
-  catch (err) {
-    return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]));
-  }
 }
+
+
+
+
+
+
 
 const Signout = async (req, res) => {
     try {
@@ -574,4 +779,58 @@ const Signout = async (req, res) => {
 }
 
 
-export { Signup, Login, forgetPassword, updateProfile, getMyProfile, signupOtp, forgetPasswordOtp, Signout };
+
+
+
+
+const verifyOTP = async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json(new ApiError(400, "Email aur OTP required hain"));
+        }
+
+        const adminDetail = await adminAuth_Model.findOne({ email });
+        if (!adminDetail) {
+            return res.status(404).json(new ApiError(404, "Admin not found"));
+        }
+
+        
+        if (!adminDetail.otp) {
+            return res.status(400).json(new ApiError(400, "Pehle OTP request karo"));
+        }
+
+        
+        if (new Date() > adminDetail.otpExpiry) {
+            return res.status(400).json(new ApiError(400, "OTP expire ho gaya, dobara bhejo"));
+        }
+
+        
+        if (adminDetail.otp !== otp) {
+            return res.status(400).json(new ApiError(400, "Galat OTP hai"));
+        }
+
+      
+        await adminAuth_Model.findByIdAndUpdate(adminDetail._id, {
+            isOtpVerified: true
+        });
+
+        return res.status(200).json(new ApiResponse(200, null, "OTP verified successfully"));
+
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, err.message));
+    }
+}
+
+
+
+// export { Signup, Login, forgetPassword, updateProfile, getMyProfile, signupOtp, forgetPasswordOtp, Signout };
+
+
+
+export { 
+    Signup, Login, forgetPassword, verifyOTP,
+    updateProfile, getMyProfile, 
+    signupOtp, forgetPasswordOtp, Signout 
+};

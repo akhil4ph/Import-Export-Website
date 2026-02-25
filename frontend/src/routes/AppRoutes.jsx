@@ -23,6 +23,7 @@ import ForgotPasswordOTP from "../pages/admin/ForgotPasswordOTP";
 import VerifyOTP from "../pages/admin/VerifyOTP";
 import SubCategories from "../pages/admin/SubCategories"
 // import ResetPasswordOTP from "../pages/admin/ResetPasswordOTP";
+import ResetPassword from "../pages/admin/ResetPassword";
 import Blogs from "../pages/admin/Blogs";
 import Promotion from "../pages/admin/Promotion";
 // User Dashboard 
@@ -65,6 +66,11 @@ export default function AppRoutes() {
       <Route path="/settings/profile" element={<ProfileSettings />} />
       <Route path="/promotion/blogs" element={<Blogs />} />
       <Route path="/promotion/managPromotion" element={<Promotion />} />
+
+      <Route path="/forgot-password" element={<ForgotPasswordOTP />} />
+      <Route path="/verify-otp" element={<VerifyOTP />} />
+      <Route path="/reset-password-otp" element={<ResetPassword />} />
+
       <Route
         path="/settings/notifications"
         element={<NotificationSettings />}

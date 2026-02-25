@@ -1,21 +1,22 @@
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
 
-dotenv.config({
-    path:"./.env"
-})
+export const jwtToken = (user) => {
+    try {
+        const accessToken = jwt.sign(
+            { user },
+            process.env.jwtKey,  
+            { expiresIn: "1h" }
+        );
 
-const jwtSecretKey = process.env.jwtKey
+        const refreshToken = jwt.sign(
+            { user },
+            process.env.jwtKey, 
+            { expiresIn: "7d" } 
+        );
 
-export const jwtToken = async (user) => {
-    try{
-        const accessToken = await jwt.sign({user}, jwtSecretKey, {expiresIn: "1h"});
-        const refreshToken = await jwt.sign({user}, jwtSecretKey, {expiresIn: "1d"});
+        return { accessToken, refreshToken };
 
-        return {accessToken, refreshToken};
-    }
-    catch(err){
-        console.log(err.message)
-        return err.message;
+    } catch (err) {
+        throw new Error(err.message);
     }
 }
