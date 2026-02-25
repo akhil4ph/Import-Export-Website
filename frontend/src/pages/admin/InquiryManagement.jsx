@@ -172,38 +172,7 @@ export default function InquiryManagement() {
 
           <div className="flex-1 bg-white rounded-xl shadow border overflow-hidden">
 
-<<<<<<< HEAD
             <div className="overflow-x-auto">
-=======
-            {/* FILTER HEADER */}
-            <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-50">
-              <div className="flex gap-2">
-                <button className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-semibold">
-                  All
-                </button>
-                <button className="px-4 py-1.5 rounded-full text-xs text-gray-500 hover:bg-gray-100">
-                  New
-                </button>
-                <button className="px-4 py-1.5 rounded-full text-xs text-gray-500 hover:bg-gray-100">
-                  Responded
-                </button>
-              </div>
-
-              <div className="relative w-64">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-2.5 text-gray-400"
-                />
-                <input
-                  placeholder="Search..."
-                  className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
-            </div>
-
-            {/* TABLE */}
-            <div className="overflow-x-auto relative">
->>>>>>> 798950d9485f692dce007de9254f6808a1214925
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-400 uppercase text-xs border-b">
                   <tr>
