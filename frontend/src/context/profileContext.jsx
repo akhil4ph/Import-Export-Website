@@ -10,11 +10,9 @@ export const UserProvider = ({ children }) => {
     const fetchUser = async () => {
       const apiResponse = await getService("/customer/auth/myprofile");
 
-
-
       if (apiResponse?.ok) {
-        setUser(apiResponse.data.data);
-      }
+        localStorage.setItem("username", apiResponse.data.data.name)
+        setUser(apiResponse.data.data);      }
     };
 
     fetchUser();

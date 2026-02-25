@@ -18,7 +18,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
 
   const signout = async () => {
-    const apiResponse = await postService("/customer/auth/signout");
+    const apiResponse = await postService("/signout");
 
     if(!apiResponse.ok){
       console.log(apiResponse.message)
@@ -27,6 +27,7 @@ export default function Sidebar() {
     }
 
     toast.success("Signout");
+    localStorage.clear();
 
     setTimeout(() => {
       navigate("/")

@@ -15,6 +15,7 @@ import adminSubCategoryRouter from "./routers/admin/subCategory.route.js";
 import adminSearchRouter from "./routers/admin/search.route.js";
 import adminPromotionRouter from "./routers/admin/promotion.route.js";
 import adminBlogRouter from "./routers/admin/blogs.route.js";
+import {Signout} from "./controllers/customer/auth.controllers.js";
 
 
 import dotenv from "dotenv";
@@ -53,6 +54,8 @@ app.use("/api/v1/admin/subcategory", adminSubCategoryRouter)
 app.use("/api/v1/admin/search", adminSearchRouter)
 app.use("/api/v1/admin/promotion", adminPromotionRouter);
 app.use("/api/v1/admin/blog", adminBlogRouter);
+
+app.use("/api/v1/signout",Signout);
 
 
 export default app;

@@ -22,7 +22,7 @@ export default function Categories() {
   const [totalPages, setTotalPages] = useState(1);
   const limit = 5;
 
-  /* ================= FETCH ALL CATEGORIES ================= */
+ 
 
   const fetchAllCategories = async () => {
     try {
@@ -40,7 +40,7 @@ export default function Categories() {
     }
   };
 
-  /* ================= FETCH SEARCH CATEGORIES ================= */
+
 
   const fetchSearchCategories = async () => {
     try {
@@ -60,7 +60,7 @@ export default function Categories() {
     }
   };
 
-  /* ================= CONTROL FETCH ================= */
+
 
   useEffect(() => {
     if (search.trim()) {
@@ -70,7 +70,7 @@ export default function Categories() {
     }
   }, [page, search]);
 
-  /* ================= SEARCH SUGGESTION ================= */
+ 
 
   const fetchSuggestions = async (value) => {
     try {
@@ -93,7 +93,7 @@ export default function Categories() {
     }
   };
 
-  /* ================= AUTO SLUG ================= */
+
 
   useEffect(() => {
     const generated = (name || "")
@@ -103,7 +103,7 @@ export default function Categories() {
     setSlug(generated);
   }, [name]);
 
-  /* ================= ADD CATEGORY ================= */
+
 
   const handleAddCategory = async () => {
     if (!name?.trim()) return toast.error("Category name required");
@@ -134,7 +134,7 @@ export default function Categories() {
     }
   };
 
-  /* ================= UPDATE CATEGORY ================= */
+
 
   const handleUpdateCategory = async () => {
     if (!name?.trim()) return toast.error("Category name required");

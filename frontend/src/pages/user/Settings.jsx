@@ -10,24 +10,25 @@ import { useNavigate } from "react-router-dom";
 export default function Profile() {
   const fileInputRef = useRef(null);
 
+    const [isEditing, setIsEditing] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
 
   const { user, setUser } = userProfile();
 
-    useEffect(() => {
-      if (!user) {
+useEffect(() => {
+      const userName = localStorage.getItem("username")
+      if (!userName) {
         navigate("/");
       }
-    }, [user, navigate]);
+    }, [navigate]);
 
   if (!user) {
     return <div className="p-10">Loading...</div>;
   }
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setUser({

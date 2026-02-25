@@ -254,7 +254,7 @@ export default function ProductDetail() {
           </motion.div>
 
           {showInquiry && <InquiryForm
-            productId={product._id}
+            productName={product.name}
             show={showInquiry}
             onClose={() => setShowInquiry(false)}
           />}

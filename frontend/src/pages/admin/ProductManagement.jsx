@@ -1,283 +1,342 @@
 import { useState, useEffect } from "react";
 import AdminLayout from "../../layout/AdminLayout";
 import {
-  Plus,
+  getService,
+  postService,
+  patchService,
+  deleteService,
+} from "../../service/axios";
+import {
   Package,
   Save,
   Trash2,
-  Pencil,
   Eye,
   EyeOff,
   Upload,
   Boxes,
   CheckCircle,
-  FileText,
   AlertTriangle,
 } from "lucide-react";
 
-const CATEGORY_OPTIONS = [
-  "None (Main)",
-  "Textiles & Apparel",
-  "Industrial Machinery",
-  "Fine Chemicals",
-  "Agricultural Goods",
-  "Consumer Electronics",
-];
-
 export default function ProductManagement() {
+  const PAGE_SIZE = 5;
+
   const emptyProduct = {
-    id: null,
+    categoryId: "",
+    subCategoryId: "",
     name: "",
+    skuId: "",
     description: "",
-    specs: "",
-    moq: "",
-    packaging: "",
-    origin: "",
-    category: "",
-    subcategory: "",
-    status: "Active",
-    image: "",
+    specifications: "",
+    status: "Available",
+    images: [],
   };
 
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+
   const [form, setForm] = useState(emptyProduct);
   const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
 
-  const itemsPerPage = 5;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+
+  /* ================= FETCH PRODUCTS ================= */
+
+  const fetchProducts = async (page = 1) => {
+    try {
+      const res = await getService(
+        `/admin/product/getAll?page=${page}&limit=${PAGE_SIZE}`
+      );
+
+      const result = res?.data?.data;
+
+      setProducts(Array.isArray(result?.data) ? result.data : []);
+      setCurrentPage(result?.currentPage || 1);
+      setTotalPages(result?.totalPages || 1);
+      setTotalItems(result?.totalItems || 0);
+    } catch (err) {
+      console.log(err);
+      setProducts([]);
+    }
+  };
+
+  /* ================= FETCH CATEGORIES ================= */
+
+  const fetchCategories = async () => {
+    try {
+      const res = await getService("/admin/category/categoryItems");
+      setCategories(Array.isArray(res?.data?.data?.data) ? res.data.data.data : []);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  /* ================= FETCH SUBCATEGORIES ================= */
+
+  const fetchSubCategories = async (categoryId) => {
+    try {
+      const res = await getService(
+        `/admin/subcategory/getbyCategoryId/${categoryId}`
+      );
+
+      setSubCategories(
+        Array.isArray(res?.data?.data?.data) ? res.data.data.data : []
+      );
+    } catch (err) {
+      console.log(err);
+      setSubCategories([]);
+    }
+  };
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("products")) || [];
-    setProducts(saved);
+    fetchProducts(currentPage);
+  }, [currentPage]);
+
+  useEffect(() => {
+    fetchCategories();
   }, []);
 
-  const saveProducts = (data) => {
-    setProducts(data);
-    localStorage.setItem("products", JSON.stringify(data));
-  };
+  /* ================= ADD PRODUCT ================= */
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.id) {
-      saveProducts(products.map((p) => (p.id === form.id ? form : p)));
-    } else {
-      saveProducts([...products, { ...form, id: Date.now() }]);
+
+    try {
+      const formData = new FormData();
+
+      formData.append("categoryId", form.categoryId);
+      formData.append("subCategoryId", form.subCategoryId);
+      formData.append("name", form.name);
+      formData.append("skuId", form.skuId);
+      formData.append("description", form.description);
+      formData.append("specifications", form.specifications);
+      formData.append("status", form.status);
+
+      form.images.forEach((file) => {
+        formData.append("productImage", file);
+      });
+
+      await postService("/admin/product/addProduct", formData);
+
+      setForm(emptyProduct);
+      setSubCategories([]);
+      fetchProducts(1);
+    } catch (err) {
+      console.log(err);
     }
-    setForm(emptyProduct);
   };
 
-  const handleDelete = (id) =>
-    saveProducts(products.filter((p) => p.id !== id));
+  /* ================= DELETE ================= */
 
-  const toggleStatus = (id) =>
-    saveProducts(
-      products.map((p) =>
-        p.id === id
-          ? { ...p, status: p.status === "Active" ? "Draft" : "Active" }
-          : p
-      )
-    );
-
-  const handleEdit = (product) => {
-    setForm(product);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const handleDelete = async (id) => {
+    try {
+      await deleteService(`/admin/product/delete?productId=${id}`);
+      fetchProducts(currentPage);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) &&
-      (filterCategory ? p.category === filterCategory : true)
-  );
+  /* ================= STATUS ================= */
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentProducts = filteredProducts.slice(
-    startIndex,
-    startIndex + itemsPerPage
-  );
+  const toggleStatus = async (id, currentStatus) => {
+    const newStatus =
+      currentStatus === "Available"
+        ? "Un-Available"
+        : "Available";
+
+    try {
+      await patchService("/admin/product/updateStatus", {
+        productId: id,
+        status: newStatus,
+      });
+
+      fetchProducts(currentPage);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  /* ================= STATS ================= */
 
   const stats = {
-    total: products.length,
-    active: products.filter((p) => p.status === "Active").length,
-    draft: products.filter((p) => p.status === "Draft").length,
-    out: products.filter((p) => p.status === "Out").length,
+    total: totalItems,
+    available: products.filter(
+      (p) => p.status === "Available"
+    ).length,
+    unavailable: products.filter(
+      (p) => p.status === "Un-Available"
+    ).length,
   };
 
   return (
     <AdminLayout>
-      {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-extrabold tracking-tight">Product Management</h1>
-        <p className="text-gray-500 text-sm">
-          Add and catalog international inventory
-        </p>
+        <h1 className="text-3xl font-extrabold">
+          Product Management
+        </h1>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Boxes} label="Total Products" value={stats.total} />
-        <StatCard
-          icon={CheckCircle}
-          label="Active"
-          value={stats.active}
-          green
-        />
-        <StatCard
-          icon={FileText}
-          label="Draft"
-          value={stats.draft}
-          yellow
-        />
-        <StatCard
-          icon={AlertTriangle}
-          label="Out of Stock"
-          value={stats.out}
-          red
-        />
+      {/* STATS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <StatCard icon={Boxes} label="Total" value={stats.total} />
+        <StatCard icon={CheckCircle} label="Available" value={stats.available} green />
+        <StatCard icon={AlertTriangle} label="Un-Available" value={stats.unavailable} red />
       </div>
 
-      {/* Product Configuration */}
+      {/* FORM */}
       <div className="bg-white rounded-xl shadow p-6 mb-8">
         <div className="flex items-center gap-2 mb-4">
           <Package size={18} />
-          <h2 className="font-semibold">Product Configuration</h2>
+          <h2 className="font-semibold">Add Product</h2>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="grid md:grid-cols-2 gap-6">
-            {/* Basic Info */}
-            <div>
-              <h3 className="text-xs font-semibold text-gray-400 mb-2">
-                BASIC INFORMATION
-              </h3>
 
-              <div className="space-y-3">
-                <Input label="Product Name" value={form.name} onChange={(v)=>setForm({...form,name:v})} />
+            {/* CATEGORY DROPDOWN */}
+            <select
+              className="input"
+              value={form.categoryId}
+              onChange={(e) => {
+                setForm({
+                  ...form,
+                  categoryId: e.target.value,
+                  subCategoryId: "",
+                });
+                fetchSubCategories(e.target.value);
+              }}
+            >
+              <option value="">Select Category</option>
+              {categories.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
 
-                <textarea className="input" placeholder="Description"
-                  value={form.description}
-                  onChange={(e)=>setForm({...form,description:e.target.value})}
-                />
+            {/* SUBCATEGORY DROPDOWN */}
+            <select
+              className="input"
+              value={form.subCategoryId}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  subCategoryId: e.target.value,
+                })
+              }
+            >
+              <option value="">Select SubCategory</option>
+              {subCategories.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
 
-                <Select
-                  label="Parent Category"
-                  value={form.category}
-                  options={CATEGORY_OPTIONS}
-                  onChange={(v)=>setForm({...form,category:v})}
-                />
+            <Input
+              label="Product Name"
+              value={form.name}
+              onChange={(v) => setForm({ ...form, name: v })}
+            />
 
-                <Select
-                  label="Sub Category"
-                  value={form.subcategory}
-                  options={CATEGORY_OPTIONS}
-                  onChange={(v)=>setForm({...form,subcategory:v})}
-                />
+            <Input
+              label="SKU ID"
+              value={form.skuId}
+              onChange={(v) => setForm({ ...form, skuId: v })}
+            />
 
-                {/* Image Upload */}
-                <label className="border-dashed border-2 rounded-lg p-4 flex items-center gap-3 cursor-pointer">
-                  <Upload size={18} />
-                  <span>Upload Product Image</span>
-                  <input type="file" hidden
-                    onChange={(e)=>{
-                      const file = e.target.files[0];
-                      if(file){
-                        const reader = new FileReader();
-                        reader.onload = ()=>setForm({...form,image:reader.result});
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </label>
+            <textarea
+              className="input"
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
 
-                {form.image && (
-                  <img
-                    src={form.image}
-                    className="h-32 rounded-lg object-cover"
-                  />
-                )}
-              </div>
-            </div>
+            <textarea
+              className="input"
+              placeholder="Specifications"
+              value={form.specifications}
+              onChange={(e) =>
+                setForm({ ...form, specifications: e.target.value })
+              }
+            />
 
-            {/* Specs */}
-            <div>
-              <h3 className="text-xs font-semibold text-gray-400 mb-2">
-                SPECIFICATIONS & LOGISTICS
-              </h3>
+            {/* STATUS */}
+            <select
+              className="input"
+              value={form.status}
+              onChange={(e) =>
+                setForm({ ...form, status: e.target.value })
+              }
+            >
+              <option value="Available">Available</option>
+              <option value="Un-Available">Un-Available</option>
+            </select>
 
-              <div className="space-y-3">
-                <Input label="MOQ" value={form.moq} onChange={(v)=>setForm({...form,moq:v})} />
-                <Input label="Packaging" value={form.packaging} onChange={(v)=>setForm({...form,packaging:v})} />
-                <Input label="Country of Origin" value={form.origin} onChange={(v)=>setForm({...form,origin:v})} />
-
-                <textarea className="input" placeholder="Specifications"
-                  value={form.specs}
-                  onChange={(e)=>setForm({...form,specs:e.target.value})}
-                />
-              </div>
-            </div>
+            {/* IMAGE UPLOAD */}
+            <label className="border-dashed border-2 rounded-lg p-4 flex items-center gap-3 cursor-pointer">
+              <Upload size={18} />
+              <span>Upload Product Images</span>
+              <input
+                type="file"
+                multiple
+                hidden
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    images: Array.from(e.target.files),
+                  })
+                }
+              />
+            </label>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
-            <button type="button" onClick={()=>setForm(emptyProduct)}
-              className="px-4 py-2 border rounded-lg">
-              Clear
-            </button>
-
+          <div className="flex justify-end mt-6">
             <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg">
               <Save size={16} />
-              {form.id ? "Update Product" : "Save Product"}
+              Save Product
             </button>
           </div>
         </form>
       </div>
 
-      {/* Inventory List */}
-      <div className="bg-white rounded-xl shadow">
-        <div className="flex justify-between items-center p-4 border-b">
-          <h2 className="font-semibold">Inventory List</h2>
-          <div className="flex gap-3">
-            <input className="input w-48" placeholder="Search..."
-              value={search} onChange={(e)=>setSearch(e.target.value)} />
-            <select className="input w-40"
-              value={filterCategory}
-              onChange={(e)=>setFilterCategory(e.target.value)}>
-              <option value="">All</option>
-              {CATEGORY_OPTIONS.map((c)=>(
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
+      {/* TABLE */}
+      <div className="bg-white rounded-xl shadow p-4">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500">
+          <thead>
             <tr>
-              <th className="p-3 text-left">PRODUCT</th>
-              <th className="p-3">CATEGORY</th>
-              <th className="p-3">ORIGIN</th>
-              <th className="p-3">MOQ</th>
-              <th className="p-3">STATUS</th>
-              <th className="p-3">ACTIONS</th>
+              <th className="p-3 text-left">Product</th>
+              <th className="p-3">SKU</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {currentProducts.map((p)=>(
-              <tr key={p.id} className="border-t">
-                <td className="p-3 font-medium">{p.name}</td>
-                <td className="p-3">{p.category}</td>
-                <td className="p-3">{p.origin}</td>
-                <td className="p-3">{p.moq}</td>
+            {products.map((p) => (
+              <tr key={p._id} className="border-t">
+                <td className="p-3">{p.name}</td>
+                <td className="p-3">{p.skuId}</td>
                 <td className="p-3">{p.status}</td>
                 <td className="p-3 flex gap-3">
-                  <button onClick={()=>handleEdit(p)} className="text-blue-600">
-                    <Pencil size={16} />
+                  <button onClick={() => toggleStatus(p._id, p.status)}>
+                    {p.status === "Available" ? (
+                      <EyeOff size={16} />
+                    ) : (
+                      <Eye size={16} />
+                    )}
                   </button>
-                  <button onClick={()=>toggleStatus(p.id)}>
-                    {p.status==="Active" ? <EyeOff size={16}/> : <Eye size={16}/>}
-                  </button>
-                  <button onClick={()=>handleDelete(p.id)} className="text-red-600">
+
+                  <button
+                    onClick={() => handleDelete(p._id)}
+                    className="text-red-600"
+                  >
                     <Trash2 size={16} />
                   </button>
                 </td>
@@ -290,10 +349,11 @@ export default function ProductManagement() {
   );
 }
 
-/* Components */
-const StatCard = ({ icon: Icon, label, value, green, yellow, red }) => (
+/* COMPONENTS */
+
+const StatCard = ({ icon: Icon, label, value, green, red }) => (
   <div className="bg-white rounded-xl shadow p-4 flex items-center gap-3">
-    <Icon className={`${green?"text-green-600":yellow?"text-yellow-500":red?"text-red-600":"text-blue-600"}`} />
+    <Icon className={`${green?"text-green-600":red?"text-red-600":"text-blue-600"}`} />
     <div>
       <p className="text-xs text-gray-500">{label}</p>
       <p className="text-xl font-bold">{value}</p>
@@ -302,13 +362,10 @@ const StatCard = ({ icon: Icon, label, value, green, yellow, red }) => (
 );
 
 const Input = ({ label, value, onChange }) => (
-  <input className="input" placeholder={label} value={value}
-    onChange={(e)=>onChange(e.target.value)} />
-);
-
-const Select = ({ label, value, options, onChange }) => (
-  <select className="input" value={value} onChange={(e)=>onChange(e.target.value)}>
-    <option value="">{label}</option>
-    {options.map((o)=><option key={o}>{o}</option>)}
-  </select>
+  <input
+    className="input"
+    placeholder={label}
+    value={value}
+    onChange={(e)=>onChange(e.target.value)}
+  />
 );

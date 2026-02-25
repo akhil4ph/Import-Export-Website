@@ -23,6 +23,6 @@ router.post("/addSubcategory", requiredLogin, upload.single("subcategoryImage"),
 router.patch("/updateStatus", requiredLogin, updateStatus);
 router.delete("/delete", requiredLogin, deleteSubCategory);
 router.get("/getAll", requiredLogin, getSubcategoryItems);
-router.get("/getbyCategoryId", requiredLogin, getSubcategorybyCategoryId);
+router.get("/getbyCategoryId/:categoryId", requiredLogin, getSubcategorybyCategoryId);
 
 export default router;

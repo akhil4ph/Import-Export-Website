@@ -6,10 +6,11 @@ const generateInquiries = async (req, res) => {
     try {
         const { _id } = req.user;
 
-        const { productId, customerName, email, alternativeEmail, contact, alternativeContact, company, country, state, quantity, message } = req.body;
+        const { productId,productName, customerName, email, alternativeEmail, contact, alternativeContact, company, country, state, quantity, message } = req.body;
 
         const inquiryDetails = await inquiriesModel.create({
             productId,
+            productName,
             customerId: _id,
             customerName,
             email,

@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import AdminLayout from "../../layout/AdminLayout";
 import {
-  Pencil,
+  getService,
+  postService,
+  patchService,
+  deleteService,
+} from "../../service/axios";
+import {
   Trash2,
   Plus,
-  Download,
-  Settings2,
   BarChart3,
   CheckCircle2,
   AlertTriangle,
@@ -19,317 +22,369 @@ export default function SubCategories() {
   const [subCategories, setSubCategories] = useState([]);
 
   const [search, setSearch] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
   const [parentFilter, setParentFilter] = useState("");
   const [page, setPage] = useState(1);
 
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [active, setActive] = useState(0);
+  const [inactive, setInactive] = useState(0);
+
   const [modal, setModal] = useState(false);
-  const [editId, setEditId] = useState(null);
 
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState("");
-  const [enabled, setEnabled] = useState(true);
+  const [skuId, setSkuId] = useState("");
+  const [description, setDescription] = useState("");
+  const [image, setImage] = useState(null);
 
-  /* ================= LOAD DATA ================= */
-  useEffect(() => {
-    const cats =
-      JSON.parse(localStorage.getItem("categories")) || [
-        { id: "1", name: "Electronics & Tech" },
-        { id: "2", name: "Heavy Machinery" },
-        { id: "3", name: "Textiles & Apparel" },
-        { id: "4", name: "Chemicals & Raw Materials" },
-      ];
+  /* ================= FETCH CATEGORIES ================= */
 
-    const subs =
-      JSON.parse(localStorage.getItem("subCategories")) || [
-        { id: 1, name: "Semiconductors & Chips", parentId: "1", items: 1204, status: true },
-        { id: 2, name: "Excavators & Drills", parentId: "2", items: 850, status: true },
-        { id: 3, name: "Raw Silk Imports", parentId: "3", items: 432, status: false },
-        { id: 4, name: "Industrial Polymers", parentId: "4", items: 2110, status: true },
-        { id: 5, name: "Renewable Energy Cells", parentId: "1", items: 67, status: true },
-        { id: 6, name: "Printed Circuit Boards", parentId: "1", items: 312, status: true },
-      ];
-
-    setCategories(cats);
-    setSubCategories(subs);
-
-    localStorage.setItem("categories", JSON.stringify(cats));
-    localStorage.setItem("subCategories", JSON.stringify(subs));
-  }, []);
-
-  const saveSubs = (data) => {
-    setSubCategories(data);
-    localStorage.setItem("subCategories", JSON.stringify(data));
+  const fetchCategories = async () => {
+    try {
+      const res = await getService("/admin/category/categoryItems");
+      setCategories(res.data?.data?.data || []);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
-  /* ================= FILTER ================= */
-  const filtered = useMemo(() => {
-    return subCategories.filter((s) => {
-      const matchName = s.name.toLowerCase().includes(search.toLowerCase());
-      const matchParent = parentFilter ? s.parentId === parentFilter : true;
-      return matchName && matchParent;
-    });
-  }, [search, parentFilter, subCategories]);
+  /* ================= GET ALL ================= */
 
-  useEffect(() => {
-    setPage(1);
-  }, [search, parentFilter]);
+  const fetchSubCategories = async (pageNumber = 1) => {
+    try {
+      const res = await getService(
+        `/admin/subcategory/getAll?page=${pageNumber}&limit=${PAGE_SIZE}`
+      );
 
-  /* ================= PAGINATION ================= */
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const startIndex = (page - 1) * PAGE_SIZE;
-  const paginatedData = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+      const result = res.data?.data || {};
 
-  /* ================= ACTIONS ================= */
-  const toggleStatus = (id) => {
-    saveSubs(
-      subCategories.map((s) =>
-        s.id === id ? { ...s, status: !s.status } : s
-      )
-    );
+      setSubCategories(Array.isArray(result.data) ? result.data : []);
+      setTotalItems(result.totalItems || 0);
+      setTotalPages(result.totalPages || 1);
+      setActive(result.available || 0);
+      setInactive(result.unavailable || 0);
+      setPage(result.currentPage || 1);
+    } catch (err) {
+      console.log(err);
+      setSubCategories([]);
+    }
   };
 
-  const deleteSub = (id) => {
-    if (!window.confirm("Delete this sub-category?")) return;
-    saveSubs(subCategories.filter((s) => s.id !== id));
+  /* ================= SEARCH ================= */
+
+  const handleSearch = async (keyword, pageNumber = 1) => {
+    try {
+      setSearch(keyword);
+      setParentFilter("");
+      setPage(pageNumber);
+
+      if (!keyword) return fetchSubCategories(pageNumber);
+
+      const res = await getService(
+        `/admin/search/subcategory?keyword=${keyword}&page=${pageNumber}&limit=${PAGE_SIZE}`
+      );
+
+      const result = res.data?.data || {};
+
+      setSubCategories(
+        Array.isArray(result.subcategories) ? result.subcategories : []
+      );
+      setTotalItems(result.pagination?.totalItems || 0);
+      setTotalPages(result.pagination?.totalPages || 1);
+      setPage(result.pagination?.currentPage || 1);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
-  const openEdit = (s) => {
-    setEditId(s.id);
-    setName(s.name);
-    setParentId(s.parentId);
-    setEnabled(s.status);
-    setModal(true);
+  /* ================= SUGGESTION ================= */
+
+  const fetchSuggestions = async (keyword) => {
+    try {
+      if (!keyword) {
+        setSuggestions([]);
+        return;
+      }
+
+      const res = await getService(
+        `/admin/search/suggestion/subcategory?keyword=${keyword}`
+      );
+
+      setSuggestions(Array.isArray(res.data?.data) ? res.data.data : []);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
-  const resetForm = () => {
-    setEditId(null);
-    setName("");
-    setParentId("");
-    setEnabled(true);
+  /* ================= CATEGORY FILTER ================= */
+
+  const handleCategoryFilter = async (id, pageNumber = 1) => {
+    try {
+      setParentFilter(id);
+      setSearch("");
+      setSuggestions([]);
+      setPage(pageNumber);
+
+      if (!id) return fetchSubCategories(pageNumber);
+
+      const res = await getService(
+        `/admin/subcategory/getbyCategoryId/${id}?page=${pageNumber}&limit=${PAGE_SIZE}`
+      );
+
+      const result = res.data?.data || {};
+
+      setSubCategories(Array.isArray(result.data) ? result.data : []);
+      setTotalItems(result.totalItems || 0);
+      setTotalPages(result.totalPages || 1);
+      setPage(result.currentPage || 1);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
-  const handleSave = () => {
-    if (!name || !parentId) return;
+  /* ================= STATUS ================= */
 
-    if (editId) {
-      saveSubs(
-        subCategories.map((s) =>
-          s.id === editId ? { ...s, name, parentId, status: enabled } : s
+  const toggleStatus = async (id, currentStatus) => {
+    const newStatus =
+      currentStatus === "Available" ? "Un-Available" : "Available";
+
+    try {
+      await patchService("/admin/subcategory/updateStatus", {
+        subCategoryId: id,
+        status: newStatus,
+      });
+
+      setSubCategories((prev) =>
+        prev.map((item) =>
+          item._id === id ? { ...item, status: newStatus } : item
         )
       );
-    } else {
-      saveSubs([
-        ...subCategories,
-        {
-          id: Date.now(),
-          name,
-          parentId,
-          items: Math.floor(Math.random() * 2000),
-          status: enabled,
-        },
-      ]);
+    } catch (err) {
+      console.log(err);
     }
-
-    setModal(false);
-    resetForm();
   };
 
-  /* ================= STATS ================= */
-  const total = subCategories.length;
-  const active = subCategories.filter((s) => s.status).length;
-  const inactive = subCategories.filter((s) => !s.status).length;
+  /* ================= DELETE ================= */
 
-  /* ================= UI ================= */
+  const deleteSub = async (id) => {
+    if (!window.confirm("Delete this sub-category?")) return;
+
+    try {
+      const apiResponse = await deleteService(`/admin/subcategory/delete?subCategoryId=${id}`);
+
+      fetchSubCategories(page);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  /* ================= ADD ================= */
+
+  const handleAdd = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("categoryId", parentId);
+      formData.append("skuId", skuId);
+      formData.append("decription", description);
+      if (image) formData.append("subcategoryImage", image);
+
+      await postService("/admin/subcategory/addSubcategory", formData);
+
+      setModal(false);
+      setName("");
+      setParentId("");
+      setSkuId("");
+      setDescription("");
+      setImage(null);
+
+      fetchSubCategories(1);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    if (search) handleSearch(search, page);
+    else if (parentFilter) handleCategoryFilter(parentFilter, page);
+    else fetchSubCategories(page);
+  }, [page]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   return (
     <AdminLayout>
       {/* HEADER */}
       <div className="flex justify-between items-start mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            Sub-Category Management
-          </h1>
-          <p className="text-gray-500 mt-1">
-            Organize your trade products into specialized sub-hierarchies.
-          </p>
-        </div>
+        <h1 className="text-3xl font-extrabold">
+          Sub-Category Management
+        </h1>
 
         <button
           onClick={() => setModal(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold shadow hover:bg-blue-700 transition"
+          className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg font-semibold"
         >
           <Plus size={18} />
           Add Sub-Category
         </button>
       </div>
 
-      {/* FILTER TOOLBAR */}
-      <div className="bg-white rounded-xl border shadow-sm mb-6">
-        <div className="p-5 border-b flex flex-wrap gap-6 items-end bg-gray-50/60">
+      {/* FILTER */}
+      <div className="bg-white rounded-xl border shadow-sm mb-6 p-5 flex gap-6">
+        <select
+          value={parentFilter}
+          onChange={(e) => handleCategoryFilter(e.target.value, 1)}
+          className="border rounded-lg px-4 py-2 text-sm w-60"
+        >
+          <option value="">All Categories</option>
+          {categories.map((c) => (
+            <option key={c._id} value={c._id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
 
-          <div>
-            <label className="block text-xs font-bold uppercase text-gray-400 mb-1">
-              Parent Category
-            </label>
-            <select
-              value={parentFilter}
-              onChange={(e) => setParentFilter(e.target.value)}
-              className="border rounded-lg px-4 py-2 text-sm w-60 focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Categories</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase text-gray-400 mb-1">
-              Sub-Category Name
-            </label>
-            <input
-              type="text"
-              placeholder="Filter by name..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="border rounded-lg px-4 py-2 text-sm w-60 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <button
-            onClick={() => {
-              setSearch("");
-              setParentFilter("");
+        <div className="relative">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearch(value);
+              fetchSuggestions(value);
+              handleSearch(value, 1);
             }}
-            className="flex items-center gap-1 text-sm text-blue-600 font-semibold hover:underline"
-          >
-            <X size={14} /> Clear Filters
-          </button>
+            placeholder="Search SubCategory..."
+            className="border rounded-lg px-4 py-2 text-sm w-60"
+          />
 
-          <div className="ml-auto flex gap-2">
-            <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
-              <Download size={18} />
-            </button>
-            <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
-              <Settings2 size={18} />
-            </button>
-          </div>
+          {suggestions.length > 0 && (
+            <div className="absolute bg-white border mt-1 w-full shadow rounded-lg z-10 max-h-52 overflow-y-auto">
+              {suggestions.map((item) => (
+                <div
+                  key={item._id}
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setSearch(item.name);
+                    setSuggestions([]);
+                    handleSearch(item.name, 1);
+                  }}
+                >
+                  {item.name}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* TABLE */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-bold tracking-wider">
-              <tr>
-                <th className="px-6 py-4 text-left">Parent Category</th>
-                <th className="px-6 py-4 text-left">Sub-Category Name</th>
-                <th className="px-6 py-4 text-left">Products</th>
-                <th className="px-6 py-4 text-left">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
+        <button
+          onClick={() => {
+            setSearch("");
+            setParentFilter("");
+            setSuggestions([]);
+            fetchSubCategories(1);
+          }}
+          className="flex items-center gap-1 text-sm text-blue-600"
+        >
+          <X size={14} /> Clear
+        </button>
+      </div>
 
-            <tbody className="divide-y">
-              {paginatedData.map((s) => {
-                const parent = categories.find((c) => c.id === s.parentId);
+      {/* TABLE */}
+      <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+        <div className="divide-y">
 
-                return (
-                  <tr key={s.id} className="hover:bg-gray-50 group transition">
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 rounded-full text-xs bg-gray-100">
-                        {parent?.name}
-                      </span>
-                    </td>
+          {subCategories.map((s) => (
+            <div
+              key={s._id}
+              className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
+            >
 
-                    <td className="px-6 py-4 font-semibold">
-                      {s.name}
-                    </td>
+              {/* LEFT SIDE */}
+              <div className="flex items-center gap-5">
 
-                    <td className="px-6 py-4 text-gray-500">
-                      {s.items.toLocaleString()}
-                    </td>
+                {/* IMAGE */}
+                <div className="w-16 h-16 rounded-xl overflow-hidden border">
+                  {s.subcategoryImage ? (
+                    <img
+                      src={s.subcategoryImage}
+                      alt={s.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center text-xs text-gray-400">
+                      No Image
+                    </div>
+                  )}
+                </div>
 
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => toggleStatus(s.id)}
-                          className={`relative w-11 h-6 rounded-full transition ${
-                            s.status ? "bg-blue-600" : "bg-gray-300"
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-[2px] left-[2px] w-5 h-5 bg-white rounded-full transition ${
-                              s.status ? "translate-x-5" : ""
-                            }`}
-                          />
-                        </button>
-                        <span className="text-xs font-semibold text-gray-500">
-                          {s.status ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                    </td>
+                {/* NAME + SKU */}
+                <div>
+                  <h3 className="font-semibold text-lg text-gray-800">
+                    {s.name}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    SKU: {s.skuId}
+                  </p>
+                </div>
+              </div>
 
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
-                        <button
-                          onClick={() => openEdit(s)}
-                          className="p-2 rounded-md hover:bg-blue-50 text-gray-500 hover:text-blue-600"
-                        >
-                          <Pencil size={16} />
-                        </button>
+              {/* RIGHT SIDE */}
+              <div className="flex items-center gap-6">
 
-                        <button
-                          onClick={() => deleteSub(s.id)}
-                          className="p-2 rounded-md hover:bg-red-50 text-gray-500 hover:text-red-600"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                {/* STATUS TOGGLE */}
+                <button
+                  onClick={() => toggleStatus(s._id, s.status)}
+                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-all duration-300 ${s.status === "Available"
+                      ? "bg-blue-600 shadow-md shadow-blue-300"
+                      : "bg-gray-300"
+                    }`}
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-all duration-300 ${s.status === "Available"
+                        ? "translate-x-7"
+                        : "translate-x-1"
+                      }`}
+                  />
+                </button>
+
+                {/* DELETE */}
+                <button
+                  onClick={() => deleteSub(s._id)}
+                  className="p-2 rounded-lg hover:bg-red-50 transition"
+                >
+                  <Trash2 size={18} className="text-gray-500 hover:text-red-600 transition" />
+                </button>
+
+              </div>
+            </div>
+          ))}
+
         </div>
 
         {/* PAGINATION */}
-        <div className="px-6 py-4 border-t flex justify-between items-center bg-gray-50/40 text-sm">
-          <p className="text-gray-500">
-            Showing{" "}
-            <span className="font-bold text-black">
-              {startIndex + 1}-{Math.min(startIndex + PAGE_SIZE, filtered.length)}
-            </span>{" "}
-            of{" "}
-            <span className="font-bold text-black">{filtered.length}</span>
+        <div className="px-6 py-4 border-t flex justify-between items-center">
+          <p className="text-sm text-gray-500">
+            Page {page} of {totalPages}
           </p>
 
           <div className="flex gap-2">
             <button
               disabled={page === 1}
               onClick={() => setPage(page - 1)}
-              className="px-3 py-1 border rounded-lg disabled:opacity-40"
+              className="px-4 py-1.5 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
             >
               Previous
             </button>
 
-            {[...Array(totalPages)].map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setPage(i + 1)}
-                className={`w-8 h-8 rounded-lg text-sm font-bold ${
-                  page === i + 1
-                    ? "bg-blue-600 text-white"
-                    : "hover:bg-gray-100"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-
             <button
               disabled={page === totalPages}
               onClick={() => setPage(page + 1)}
-              className="px-3 py-1 border rounded-lg disabled:opacity-40"
+              className="px-4 py-1.5 border rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50"
             >
               Next
             </button>
@@ -337,32 +392,84 @@ export default function SubCategories() {
         </div>
       </div>
 
-      {/* STATS CARDS */}
+      {/* ADD MODAL */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-lg rounded-xl p-6 relative shadow-lg">
+            <button
+              onClick={() => setModal(false)}
+              className="absolute top-4 right-4"
+            >
+              <X size={20} />
+            </button>
+
+            <h2 className="text-2xl font-bold mb-6">
+              Add New Sub-Category
+            </h2>
+
+            <div className="space-y-4">
+              <select
+                value={parentId}
+                onChange={(e) => setParentId(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
+              >
+                <option value="">Select Category</option>
+                {categories.map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="text"
+                placeholder="SubCategory Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
+              />
+
+              <input
+                type="text"
+                placeholder="SKU ID"
+                value={skuId}
+                onChange={(e) => setSkuId(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
+              />
+
+              <textarea
+                placeholder="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2"
+              />
+
+              <input
+                type="file"
+                onChange={(e) => setImage(e.target.files[0])}
+                className="w-full"
+              />
+
+              <button
+                onClick={handleAdd}
+                className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-semibold"
+              >
+                Add Sub-Category
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STATS */}
       <div className="grid md:grid-cols-3 gap-6 mt-8">
-        <StatCard
-          icon={<BarChart3 size={22} />}
-          label="Total Sub-Categories"
-          value={total}
-          color="blue"
-        />
-        <StatCard
-          icon={<CheckCircle2 size={22} />}
-          label="Active"
-          value={active}
-          color="green"
-        />
-        <StatCard
-          icon={<AlertTriangle size={22} />}
-          label="Inactive"
-          value={inactive}
-          color="orange"
-        />
+        <StatCard icon={<BarChart3 size={22} />} label="Total" value={totalItems} color="blue" />
+        <StatCard icon={<CheckCircle2 size={22} />} label="Available" value={active} color="green" />
+        <StatCard icon={<AlertTriangle size={22} />} label="Un-Available" value={inactive} color="orange" />
       </div>
     </AdminLayout>
   );
 }
-
-/* ================= STAT CARD ================= */
 
 function StatCard({ icon, label, value, color }) {
   const colors = {
@@ -373,16 +480,10 @@ function StatCard({ icon, label, value, color }) {
 
   return (
     <div className="bg-white border rounded-xl p-6 shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <div className={`p-3 rounded-lg ${colors[color]}`}>
-          {icon}
-        </div>
-        <span className="text-xs uppercase text-gray-400 font-bold">
-          Overview
-        </span>
+      <div className={`p-3 rounded-lg ${colors[color]}`}>
+        {icon}
       </div>
-
-      <h4 className="text-2xl font-extrabold">{value}</h4>
+      <h4 className="text-2xl font-extrabold mt-3">{value}</h4>
       <p className="text-sm text-gray-500 mt-1">{label}</p>
     </div>
   );

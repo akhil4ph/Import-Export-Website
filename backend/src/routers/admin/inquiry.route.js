@@ -4,7 +4,7 @@ import {requiredLogin} from "../../middlewares/requiredLogin.midddleware.js"
 
 const router = Router();
 
-router.patch("/status", requiredLogin, updateInquiryStatus);
+router.put("/status", requiredLogin, updateInquiryStatus);
 router.get("/", requiredLogin, getInquiries);
 router.get("/customerdate", requiredLogin, getInquiriesByDate);
 

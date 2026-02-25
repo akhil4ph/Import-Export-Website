@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { postService } from "../../service/axios";
 import { useParams } from "react-router-dom";
 
-export default function InquiryForm({ productId, show, onClose }) {
+export default function InquiryForm({ productName, show, onClose }) {
     const initialState = {
         customerName: "",
         email: "",
@@ -43,6 +43,7 @@ export default function InquiryForm({ productId, show, onClose }) {
             const payload = {
                 ...formData,
                 productId: id,
+                productName
             };
 
             const apiResponse = await postService(

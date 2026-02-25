@@ -33,14 +33,8 @@ export function AuthProvider({ children }) {
     return "INVALID";
   };
 
-  // LOGOUT
-  const logout = () => {
-    localStorage.removeItem("admin_session");
-    setUser(null);
-  };
-
   return (
-    <AuthContext.Provider value={{ user, signup, login, logout }}>
+    <AuthContext.Provider value={{ user, signup, login}}>
       {children}
     </AuthContext.Provider>
   );

@@ -8,6 +8,10 @@ const inquiriesSchema = new Schema({
         ref: "product",
         required: true
     },
+    productName: {
+        type: String,
+        required: true
+    },
     customerId: {
         type: ObjectId,
         ref: "Customer",

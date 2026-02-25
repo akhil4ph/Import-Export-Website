@@ -72,7 +72,7 @@ const updateStatus = async (req, res) => {
 
 const deleteProduct = async (req, res) => {
     try {
-        const { productId } = req.body;
+        const { productId } = req.query;
 
         if (!mongoose.Types.ObjectId.isValid(productId)) {
             return res.status(400).json(
@@ -89,6 +89,8 @@ const deleteProduct = async (req, res) => {
         }
 
         const productDetails = await productModel.findByIdAndDelete(productId);
+
+        console.log(productDetails)
 
         if (!productDetails) {
             return res.status(400).json(new ApiError(400, "Failed to Delete Category"));

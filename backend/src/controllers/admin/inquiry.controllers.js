@@ -5,36 +5,37 @@ import { ApiError } from "../../utils/api-error.js";
 import { ApiResponse } from "../../utils/api-response.js";
 
 const updateInquiryStatus = async (req, res) => {
-    try{
-        const {inquiryId, status} = req.body;
+    try {
+        const { inquiryId, status } = req.body;
 
-        if(!mongoose.Types.ObjectId.isValid(inquiryId)){
-            return res.status(400).json(new ApiError(400, "Invalid Inquiry ID" ))
+        if (!mongoose.Types.ObjectId.isValid(inquiryId)) {
+            return res.status(400).json(new ApiError(400, "Invalid Inquiry ID"))
         }
 
 
         const allowedStatus = ["Open", "Processing", "Close"];
-        if(!allowedStatus.includes(status)){
-             return res.status(400).json(new ApiError(400, "Invalid Inquiry Status" ))
+        if (!allowedStatus.includes(status)) {
+            return res.status(400).json(new ApiError(400, "Invalid Inquiry Status"))
         }
 
         const inquiryDetail = await inquiriesModel.findByIdAndUpdate(
-            {inquiryId},
-            {status},
-            {new : true},
+            inquiryId,
+            { status }, {
+            returnDocument: "after"
+        }
         )
 
-        if(!inquiryDetail){
+        if (!inquiryDetail) {
             return res.status(404).json(new ApiError(404, "Inquiry Not Found"))
         }
 
         const io = getIO();
 
         io.to(`customer_${inquiryDetail.customerId}`).emit(
-             "inquiryStatusUpdated",{
-                inquiryId: inquiryDetail._id,
-                status: inquiryDetail.status
-             }
+            "inquiryStatusUpdated", {
+            inquiryId: inquiryDetail._id,
+            status: inquiryDetail.status
+        }
         );
 
         io.to(`admin_room`).emit(
@@ -44,8 +45,8 @@ const updateInquiryStatus = async (req, res) => {
 
         return res.status(200).json(new ApiResponse(200, inquiryDetail, "Successfully"));
     }
-    catch(err){
-        return res.status(500).json(new ApiError(500, err.message, [{message: err.message, name: err.name}]));
+    catch (err) {
+        return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]));
     }
 }
 
@@ -86,6 +87,9 @@ const getInquiries = async (req, res) => {
             );
         }
 
+        const close = await inquiriesModel.find({ status: "Close" });
+        const open = await inquiriesModel.find({ status: "Open" })
+
         return res.status(200).json(
             new ApiResponse(
                 200,
@@ -93,7 +97,9 @@ const getInquiries = async (req, res) => {
                     currentPage: page,
                     totalInquiry,
                     totalPage: Math.ceil(totalInquiry / limit),
-                    inquiryList
+                    inquiryList,
+                    close: close.length,
+                    open: open.length
                 },
                 "Successful"
             )
@@ -108,7 +114,7 @@ const getInquiries = async (req, res) => {
     }
 };
 
-const getInquiriesByDate  = async (req, res) => {
+const getInquiriesByDate = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
 
@@ -116,14 +122,20 @@ const getInquiriesByDate  = async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+
         const query = {
             status: { $in: ["Open", "Processing"] }
         };
 
         if (startDate && endDate) {
             query.createdAt = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate)
+                $gte: start,
+                $lte: end
             };
         }
 
@@ -143,11 +155,38 @@ const getInquiriesByDate  = async (req, res) => {
             });
         }
 
+        const close = await inquiriesModel.find({
+            createdAt: {
+                $gte: start,
+                $lte: end
+            },
+            status: "Close"
+        });
+
+        const open = await inquiriesModel.find({
+            createdAt: {
+                $gte: start,
+                $lte: end
+            },
+            status: "Open"
+        })
+
+        const processing = await inquiriesModel.find({
+            createdAt: {
+                $gte: start,
+                $lte: end
+            },
+            status: "Processing"
+        })
+
         return res.status(200).json({
             currentPage: page,
             totalInquiry,
             totalPage: Math.ceil(totalInquiry / limit),
-            inquiryList
+            inquiryList,
+            open: open.length,
+            close: close.length,
+            processing: processing.length
         });
 
     } catch (error) {
@@ -157,4 +196,4 @@ const getInquiriesByDate  = async (req, res) => {
     }
 };
 
-export {updateInquiryStatus, getInquiries, getInquiriesByDate};
+export { updateInquiryStatus, getInquiries, getInquiriesByDate };

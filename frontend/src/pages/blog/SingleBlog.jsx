@@ -44,7 +44,7 @@ export default function SingleBlog() {
       {/*  HERO SECTION */}
       <div className="relative w-full h-[400px] md:h-[500px] overflow-hidden">
         <img
-          src={blog.blogMedia}
+          src={blog.blogMedia[0]}
           alt={blog.title}
           className="w-full h-full object-cover scale-105"
         />

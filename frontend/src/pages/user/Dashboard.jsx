@@ -18,10 +18,11 @@ export default function Dashboard() {
   const {user} = userProfile();
 
     useEffect(() => {
-      if (!user) {
+      const userName = localStorage.getItem("username")
+      if (!userName) {
         navigate("/");
       }
-    }, [user, navigate]);
+    }, [navigate]);
 
   if (!user) {
     return <div className="p-10">Loading...</div>;

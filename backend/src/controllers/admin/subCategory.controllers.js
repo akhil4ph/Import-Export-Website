@@ -1,7 +1,9 @@
 import { cloudinary } from "../../config/cloudinary.config.js";
 import subCategory_Model from "../../models/common/sub_category.model.js";
+import productModel from "../../models/common/product.model.js";
 import { ApiError } from "../../utils/api-error.js";
 import { ApiResponse } from "../../utils/api-response.js";
+import mongoose from "mongoose";
 
 const addSubCategory = async (req, res) => {
     try {
@@ -65,7 +67,7 @@ const updateStatus = async (req, res) => {
 
 const deleteSubCategory = async (req, res) => {
     try {
-        const { subCategoryId } = req.body;
+        const { subCategoryId } = req.query;
 
         if (!mongoose.Types.ObjectId.isValid(subCategoryId)) {
             return res.status(400).json(
@@ -124,8 +126,15 @@ const getSubcategoryItems = async (req, res) => {
             );
         }
 
+        const available = await subCategory_Model.find({status: "Available"});
+        const unavailable = await subCategory_Model.find({status: "Un-Available"});
+
+        
+
         return res.status(200).json(
             new ApiResponse(200, {
+                available: available.length,
+                unavailable: unavailable.length,
                 totalItems,
                 currentPage: page,
                 totalPages: Math.ceil(totalItems / limit),
