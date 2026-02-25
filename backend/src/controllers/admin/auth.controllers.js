@@ -218,60 +218,137 @@ import { brevo } from '../../config/brevo.config.js';
 //     }
 // };
 
+// const Signup = async (req, res) => {
+//   try {
+//     const { name, email, password, securityKey } = req.body;
+
+//     const hashPassword = await passwordEncrypt(password)
+
+//     if(securityKey !== process.env.adminKey){
+//         return res.status(401).json(new ApiError(401, "Wrong Security Key."))
+//     }
+
+//     const adminDetail = adminAuth_Model({
+//       name,
+//       email,
+//       password: hashPassword
+//     });
+
+//     await adminDetail.save();
+
+//     adminDetail.password = undefined;
+//     adminDetail.email = undefined;
+
+//     await cookiesForUser(res, adminDetail);
+
+//     return res.status(200).json(new ApiResponse(200, null, "Customer Signup Successfully."));
+//   }
+//   catch (err) {
+//     return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]));
+//   }
+// }
+
+
+
+
 const Signup = async (req, res) => {
-  try {
-    const { name, email, password, securityKey } = req.body;
+    try {
+        const { name, email, password, securityKey } = req.body;
 
-    const hashPassword = await passwordEncrypt(password)
+        // ✅ Validation
+        if (!name || !email || !password || !securityKey) {
+            return res.status(400).json(new ApiError(400, "Sab fields required hain"));
+        }
 
-    if(securityKey !== process.env.adminKey){
-        return res.status(401).json(new ApiError(401, "Wrong Security Key."))
+        // ✅ Security key check
+        if (securityKey !== process.env.adminKey) {
+            return res.status(401).json(new ApiError(401, "Wrong Security Key"));
+        }
+
+        // ✅ Password encrypt
+        const hashPassword = await passwordEncrypt(password);
+
+        // ✅ new keyword add kiya
+        const adminDetail = new adminAuth_Model({
+            name,
+            email,
+            password: hashPassword
+        });
+
+        await adminDetail.save();
+
+        // ✅ Sensitive fields hide karo
+        adminDetail.password = undefined;
+
+        await cookiesForUser(res, adminDetail);
+
+        return res.status(200).json(new ApiResponse(200, adminDetail, "Signup Successfully"));
+
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, err.message));
     }
-
-    const adminDetail = adminAuth_Model({
-      name,
-      email,
-      password: hashPassword
-    });
-
-    await adminDetail.save();
-
-    adminDetail.password = undefined;
-    adminDetail.email = undefined;
-
-    await cookiesForUser(res, adminDetail);
-
-    return res.status(200).json(new ApiResponse(200, null, "Customer Signup Successfully."));
-  }
-  catch (err) {
-    return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]));
-  }
 }
+
+
+
+
+// const Login = async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     const adminDetail = await adminAuth_Model.findOne({ email: email });
+
+//     const decryptResult = await passwordDecrypt(password, adminDetail.password);
+
+//     if (!decryptResult) {
+//       return res.status(401).json(new ApiError(401, "Incorrect Password"));
+//     }
+
+//     adminDetail.password = undefined;
+//     adminDetail.email = undefined;
+//     adminDetail.contact = undefined;
+
+//     await cookiesForUser(res, adminDetail);
+
+//     return res.status(200).json(new ApiResponse(200, null, "Access Granted"));
+//   }
+//   catch (err) {
+//     return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]))
+//   }
+// }
+
 
 const Login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+    try {
+        const { password } = req.body;
 
-    const adminDetail = await adminAuth_Model.findOne({ email: email });
+       
+        const adminDetail = req.user;
 
-    const decryptResult = await passwordDecrypt(password, adminDetail.password);
+        if (!password) {
+            return res.status(400).json(new ApiError(400, "Password is required"));
+        }
 
-    if (!decryptResult) {
-      return res.status(401).json(new ApiError(401, "Incorrect Password"));
+        const isPasswordCorrect = await passwordDecrypt(password, adminDetail.password);
+        if (!isPasswordCorrect) {
+            return res.status(401).json(new ApiError(401, "Incorrect Password"));
+        }
+
+        
+        adminDetail.password = undefined;
+
+        await cookiesForUser(res, adminDetail);
+
+        return res.status(200).json(new ApiResponse(200, adminDetail, "Login Successfully"));
+
+    } catch (err) {
+        return res.status(500).json(new ApiError(500, err.message));
     }
-
-    adminDetail.password = undefined;
-    adminDetail.email = undefined;
-    adminDetail.contact = undefined;
-
-    await cookiesForUser(res, adminDetail);
-
-    return res.status(200).json(new ApiResponse(200, null, "Access Granted"));
-  }
-  catch (err) {
-    return res.status(500).json(new ApiError(500, err.message, [{ message: err.message, name: err.name }]))
-  }
 }
+
+
+
+
 
 const forgetPassword = async (req, res) => {
   try {

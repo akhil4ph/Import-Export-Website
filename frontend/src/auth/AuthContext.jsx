@@ -14,17 +14,21 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const signup = async (data) => {
+
+
+  
+ const signup = async (data) => {
     const res = await postService("/admin/auth/signup", data);
 
     if (res.ok) {
-      setUser(res.data?.data || data);
-      localStorage.setItem("admin_session", JSON.stringify(res.data?.data || data));
-      return "SUCCESS";
-    } else {
-      return res.message || "Signup failed";
+        setUser(res.data?.data);
+        localStorage.setItem("admin_session", JSON.stringify(res.data?.data));
+        return "SUCCESS";
     }
-  };
+
+    // ✅ Server ka exact error return karo
+    return res.message || "Signup failed";
+};
 
   const login = async (email, password) => {
     const res = await postService("/admin/auth/login", { email, password });
