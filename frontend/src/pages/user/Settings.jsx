@@ -19,16 +19,12 @@ export default function Profile() {
 
   const { user, setUser } = userProfile();
 
-useEffect(() => {
+  useEffect(() => {
       const userName = localStorage.getItem("username")
       if (!userName) {
         navigate("/");
       }
     }, [navigate]);
-
-  if (!user) {
-    return <div className="p-10">Loading...</div>;
-  }
 
   const handleChange = (e) => {
     setUser({
@@ -110,6 +106,10 @@ useEffect(() => {
         year: "numeric",
       })
     : "";
+
+      if (!user) {
+    return <div className="p-10">Loading...</div>;
+  }
 
   return (
     <div className="flex bg-gray-50">

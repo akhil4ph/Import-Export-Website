@@ -14,20 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
 
-  const navigate = useNavigate();
-  const {user} = userProfile();
-
-    useEffect(() => {
-      const userName = localStorage.getItem("username")
-      if (!userName) {
-        navigate("/");
-      }
-    }, [navigate]);
-
-  if (!user) {
-    return <div className="p-10">Loading...</div>;
-  }
-
+  // ✅ ALL STATES FIRST
   const [stats, setStats] = useState({
     total: 0,
     open: 0,
@@ -38,9 +25,22 @@ export default function Dashboard() {
   const [recent, setRecent] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const navigate = useNavigate();
+  const { user } = userProfile();
+
   useEffect(() => {
+    const userName = localStorage.getItem("username");
+    if (!userName) {
+      navigate("/");
+    }
+  }, [navigate]);
+
+
+  useEffect(() => {
+    if (!user) return; // condition INSIDE effect
+
     fetchDashboardData();
-  }, []);
+  }, [user]);
 
   const fetchDashboardData = async () => {
     try {
@@ -56,7 +56,6 @@ export default function Dashboard() {
       }
 
       const data = apiResponse.data.data;
-
       const inquiries = data.inquiryList || [];
 
       const total = data.totalItems;
@@ -65,8 +64,6 @@ export default function Dashboard() {
       const close = data?.stats?.close?.length || 0;
 
       setStats({ total, open, processing, close });
-
-      // 🔥 Set Recent (latest 5)
       setRecent(inquiries.slice(0, 5));
 
       setLoading(false);
@@ -84,7 +81,7 @@ export default function Dashboard() {
     return "bg-gray-100 text-gray-600";
   };
 
-  if (!user) return null;
+  if (!user) return <div className="p-10">Loading...</div>;
   if (loading) return <div className="p-10">Loading...</div>;
 
   return (
@@ -96,7 +93,6 @@ export default function Dashboard() {
 
         <Header />
 
-        {/* Welcome */}
         <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm flex justify-between items-center">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
@@ -108,7 +104,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mt-8">
           <Card title="Total Inquiries" value={stats.total} icon={<ClipboardList className="text-blue-500" />} />
           <Card title="Open" value={stats.open} icon={<Clock className="text-yellow-500" />} />
@@ -116,7 +111,6 @@ export default function Dashboard() {
           <Card title="Closed" value={stats.close} icon={<CheckCircle className="text-green-500" />} />
         </div>
 
-        {/* Recent */}
         <div className="bg-white mt-8 p-6 rounded-3xl shadow-sm overflow-x-auto">
           <h2 className="text-lg font-semibold mb-6 text-gray-800">
             Recent Inquiries

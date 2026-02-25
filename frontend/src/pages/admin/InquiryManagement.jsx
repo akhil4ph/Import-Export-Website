@@ -283,6 +283,18 @@ export default function InquiryManagement() {
                 {selected.message}
               </div>
 
+              {selected.status !== "Processing" && (
+                <button
+                  onClick={() =>
+                    updateStatus(selected._id, "Processing")
+                  }
+                  className="w-full bg-yellow-500 text-white py-2 rounded-lg flex justify-center gap-2"
+                >
+                  <Reply size={16} />
+                  Mark as Processing
+                </button>
+              )}
+
               {selected.status !== "Close" && (
                 <button
                   onClick={() =>

@@ -9,20 +9,7 @@ export default function MyInquiries() {
 
   const navigate = useNavigate();
 
-  const {user} = userProfile();
-
- useEffect(() => {
-      const userName = localStorage.getItem("username")
-      if (!userName) {
-        navigate("/");
-      }
-    }, [navigate]);
-  
-    if (!user) {
-      return <div className="p-10">Loading...</div>;
-    }
-
-  const { id } = useParams();
+  const { user } = userProfile();
 
   const [inquiries, setInquiries] = useState([]);
   const [selectedInquiry, setSelectedInquiry] = useState(null);
@@ -34,6 +21,16 @@ export default function MyInquiries() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    const userName = localStorage.getItem("username")
+    if (!userName) {
+      navigate("/");
+    }
+  }, [navigate]);
+
+
+  const { id } = useParams();
 
   // 🔥 Fetch inquiries
   useEffect(() => {
@@ -96,6 +93,10 @@ export default function MyInquiries() {
   );
 
   if (loading) {
+    return <div className="p-10">Loading...</div>;
+  }
+
+  if (!user) {
     return <div className="p-10">Loading...</div>;
   }
 
