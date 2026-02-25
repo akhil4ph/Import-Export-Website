@@ -480,7 +480,7 @@ const updateProfile = async (req, res) => {
 const getMyProfile = async (req, res) => {
   try {
     const { _id } = req.user;
-
+      console.log(_id);
     const userDetail = await adminAuth_Model.findById(_id);
 
     if (!userDetail) {
