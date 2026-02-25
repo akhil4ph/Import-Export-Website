@@ -6,7 +6,7 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
-  // Restore login session on reload
+ 
   useEffect(() => {
     const session = localStorage.getItem("admin_session");
     if (session) {
@@ -26,7 +26,7 @@ export function AuthProvider({ children }) {
         return "SUCCESS";
     }
 
-    // ✅ Server ka exact error return karo
+   
     return res.message || "Signup failed";
 };
 

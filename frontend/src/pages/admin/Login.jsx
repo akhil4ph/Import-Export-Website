@@ -17,7 +17,7 @@ export default function Login() {
         e.preventDefault();
         setError("");
 
-        // ✅ Frontend validation
+        
         if (!email.trim()) {
             setError("Email required hai");
             return;
@@ -33,9 +33,9 @@ export default function Login() {
             const result = await login(email, password);
 
             if (result === "SUCCESS") {
-                navigate("/admin/dashboard"); // ✅ sahi path
+                navigate("/admin/dashboard"); 
             } else {
-                setError(result); // ✅ server ka exact message
+                setError(result); 
             }
         } finally {
             setLoading(false);

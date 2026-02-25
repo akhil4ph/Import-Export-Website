@@ -12,7 +12,7 @@ const VerifyOTP = () => {
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
   const [otpVerified, setOtpVerified] = useState(false);
 
-  // Get email from navigation state
+  
   useEffect(() => {
     if (location.state?.email) {
       setEmail(location.state.email);
@@ -21,7 +21,7 @@ const VerifyOTP = () => {
     }
   }, [location, navigate]);
 
-  // Timer for OTP expiry
+  
   useEffect(() => {
     if (timeLeft <= 0) return;
 
@@ -38,13 +38,13 @@ const VerifyOTP = () => {
     return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  // Handle OTP input (only numbers, max 6 digits)
+  
   const handleOtpChange = (e) => {
     const value = e.target.value.replace(/[^0-9]/g, "").slice(0, 6);
     setOtp(value);
   };
 
-  // Verify OTP
+
   const handleVerifyOTP = async (e) => {
     e.preventDefault();
 
@@ -57,7 +57,7 @@ const VerifyOTP = () => {
     try {
       console.log("🔐 Verifying OTP:", otp);
       const response = await postService(
-        "/admin/auth/verify-otp",
+        "/admin/auth/verifyOtp",
         { email: email.trim(), otp },
         "Verifying OTP..."
       );
@@ -68,7 +68,6 @@ const VerifyOTP = () => {
         toast.success("✅ OTP verified successfully!");
         setOtpVerified(true);
 
-        // Navigate to reset password after 1.5 seconds
         setTimeout(() => {
           navigate("/admin/reset-password-otp", { state: { email } });
         }, 1500);
@@ -84,20 +83,20 @@ const VerifyOTP = () => {
     }
   };
 
-  // Resend OTP
+
   const handleResendOTP = async () => {
     setIsLoading(true);
     try {
       console.log("📧 Resending OTP to:", email);
       const response = await postService(
-        "/admin/forgot-password",
+        "/admin/auth/forgetpasswordOtp",
         { email: email.trim() },
         "Sending new OTP..."
       );
 
       if (response.ok) {
-        toast.success("✅ New OTP sent to your email!");
-        setTimeLeft(600); // Reset timer
+        toast.success(" New OTP sent to your email!");
+        setTimeLeft(600);
         setOtp("");
       } else {
         toast.error("Failed to resend OTP. Please try again.");

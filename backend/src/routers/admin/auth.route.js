@@ -3,6 +3,7 @@ import { Signup, Login, forgetPassword, updateProfile, getMyProfile, signupOtp, 
 import { duplicateEmail } from "../../middlewares/duplicateEmail.middleware.js";
 import { adminPresent } from "../../middlewares/emailIsPresent.middleware.js";
 import { requiredLogin } from "../../middlewares/requiredLogin.midddleware.js";
+import { verifyOTP } from "../../controllers/admin/auth.controllers.js";
 import multer from "multer"
 
 const router = Router();
@@ -23,11 +24,17 @@ const upload = multer({
 
 router.post("/signup", Signup);
 router.post("/login", adminPresent, Login);
-router.patch('/forgetpassword', forgetPassword);
+// router.patch('/forgetpassword', forgetPassword);
 router.put('/updateProfile', requiredLogin, upload.single("profileImage"), updateProfile);
 router.get("/myprofile", requiredLogin, getMyProfile);
 router.post('/signupOtp', duplicateEmail, signupOtp);
-router.post("/forgetpasswordOtp", adminPresent, forgetPasswordOtp);
+//router.post("/forgetpassword", adminPresent, forgetPasswordOtp);
+
+
+// Forget Password routes
+router.post("/forgetpasswordOtp", adminPresent, forgetPasswordOtp);  
+router.post("/verifyOtp", verifyOTP);                                 
+router.post('/forgetpassword', forgetPassword);                      
 
 router.post("/signout",Signout);
 
