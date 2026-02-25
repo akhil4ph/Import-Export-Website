@@ -1,10 +1,8 @@
 import React, { useRef, useEffect, useState } from "react";
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import {getService} from "../../service/axios"
+import { useNavigate } from "react-router-dom";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ██████  DATA — Edit all services content here
-// ─────────────────────────────────────────────────────────────────────────────
 
 const SERVICES_HEADING = {
   title: "Tailored Export\nSolutions for\nYour Business",
@@ -51,9 +49,6 @@ const VENN_DATA = {
   ctaLabel: "Download Product Catalog",
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// INTERNAL SUB-COMPONENTS
-// ─────────────────────────────────────────────────────────────────────────────
 
 const DarkMarquee = () => {
   const text = MARQUEE_ITEMS.join("  •  ");
@@ -100,7 +95,9 @@ const CountUp = ({ target, suffix = "", duration = 1.8 }) => {
 };
 
 // ── Original ServicePill — image + heading, NO dropdown ──────────────────────
-const ServicePill = ({ service, index }) => (
+const ServicePill = ({ service, index }) => {
+  const navigate = useNavigate();
+  return(
   <motion.div
     initial={{ opacity: 0, x: 40 }}
     whileInView={{ opacity: 1, x: 0 }}
@@ -110,7 +107,7 @@ const ServicePill = ({ service, index }) => (
     style={{ background: "rgba(255,255,255,0.93)" }}
     whileHover={{ scale: 1.02, transition: { duration: 0.25 } }}
   >
-    <div className="flex items-center gap-3 md:gap-4 px-2 py-2 pr-5">
+    <div className="flex items-center gap-3 md:gap-4 px-2 py-2 pr-5" onClick={() => navigate(`/CategoryProducts/${service._id}`)}>
       <div className="w-10 h-10 md:w-12 md:h-12 rounded-full overflow-hidden flex-shrink-0">
         <img src={service.categoryImage} alt={service.name} className="w-full h-full object-cover" />
       </div>
@@ -120,7 +117,7 @@ const ServicePill = ({ service, index }) => (
       </span>
     </div>
   </motion.div>
-);
+)}
 
 const VennDiagram = () => {
   const ref = useRef(null);
@@ -171,10 +168,6 @@ const VennDiagram = () => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
-
 const ServicesSection = () => {
   const ref = useRef(null);
 
@@ -183,7 +176,6 @@ const ServicesSection = () => {
     offset: ["start 0.9", "start 0.3"],
   });
 
-  // Cinematic Scroll Animation
   const y = useTransform(scrollYProgress, [0, 1], [160, 0]);
   const scale = useTransform(scrollYProgress, [0, 1], [0.96, 1]);
   const opacity = useTransform(scrollYProgress, [0, 1], [0.6, 1]);
@@ -198,8 +190,7 @@ const ServicesSection = () => {
             console.log(apiResponse.message);
             return
           }
-  
-          console.log(apiResponse.data.data.categoryList)
+
           setcategoryProduct(apiResponse.data.data.categoryList)
         }
       )()
