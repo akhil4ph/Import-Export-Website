@@ -21,7 +21,8 @@ import AdminLogin from "../pages/admin/Login";
 import AdminSignup from "../pages/admin/Signup";
 import ForgotPasswordOTP from "../pages/admin/ForgotPasswordOTP";
 import VerifyOTP from "../pages/admin/VerifyOTP";
-import ResetPasswordOTP from "../pages/admin/ResetPasswordOTP";
+import SubCategories from "../pages/admin/SubCategories"
+// import ResetPasswordOTP from "../pages/admin/ResetPasswordOTP";
 import Blogs from "../pages/admin/Blogs";
 import Promotion from "../pages/admin/Promotion";
 // User Dashboard 
@@ -77,7 +78,7 @@ export default function AppRoutes() {
       {/* OTP-Based Forgot Password Flow */}
       <Route path="forgot-password" element={<ForgotPasswordOTP />} />
       <Route path="verify-otp" element={<VerifyOTP />} />
-      <Route path="reset-password-otp" element={<ResetPasswordOTP />} />
+      {/* <Route path="reset-password-otp" element={<ResetPasswordOTP />} /> */}
 
       {/* PROTECTED ROUTES */}
       <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>

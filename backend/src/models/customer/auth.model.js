@@ -1,5 +1,6 @@
 import mongoose, {Schema} from "mongoose";
 
+
 const customerAuth_Schema = new Schema({
     name:{
         type: String,
@@ -12,6 +13,7 @@ const customerAuth_Schema = new Schema({
     },
     password:{
         type: String,
+        required: true
     },
     contact: {
         type: Number,
@@ -33,21 +35,9 @@ const customerAuth_Schema = new Schema({
     },
     state:{
         type: String,
-    },
-    // OTP Fields for forgot password
-    otp: {
-        type: String,
-        default: null
-    },
-    otpExpiry: {
-        type: Date,
-        default: null
-    },
-    isOtpVerified: {
-        type: Boolean,
-        default: false
     }
 }, {timestamps: true});
+
 
 const customerAuth_Model = mongoose.model("Customer", customerAuth_Schema);
 

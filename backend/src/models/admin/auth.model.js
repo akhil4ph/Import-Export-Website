@@ -1,55 +1,41 @@
 import mongoose, { Schema } from "mongoose";
-import crypto from "crypto";
 
 const adminAuth_Schema = new Schema({
-    name: {
+    name:{
         type: String,
-        required: true
+        required:true
     },
-    employeeId:{
-        type: String,
-        unique: true,
-        default: () => crypto.randomUUID()
-    },
-    email: {
+    email:{
         type: String,
         required: true,
         unique: true
     },
-    password: {
-        type: String,
-        required: true
-    },
-    company: {
+    password:{
         type: String,
         required: true
     },
     contact: {
-        type: Number
+        type: Number,
+        unique: true,
+        sparse: true
     },
-    profileImage: {
+    profileImage:{
         type: String
     },
-    Gender: {
+    gender:{
         type: String,
-        enum: ["Male", "Female", "Other"]
+        enum:["Male", "Female", "Other"]
     },
-    // OTP Fields for forgot password
-    otp: {
+    dob:{
         type: String,
-        default: null
     },
-    otpExpiry: {
-        type: Date,
-        default: null
+    country:{
+        type: String,
     },
-    isOtpVerified: {
-        type: Boolean,
-        default: false
+    state:{
+        type: String,
     }
-},
-    { timestamps: true }
-);
+}, {timestamps: true});
 
 const adminAuth_Model = mongoose.model("admin", adminAuth_Schema);
 
